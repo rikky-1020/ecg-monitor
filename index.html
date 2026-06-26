@@ -277,11 +277,13 @@ const CATS=[
  ]},
  {g:'心室性', items:[
    {k:'pvc',n:'心室期外収縮',en:'PVC',s:{hr:75,pAmp:1,pr:160,qrs:90,rAmp:1,st:0,tAmp:1,noise:.05,special:'pvc',delta:0},
-     note:'<b>PVC</b>：先行P波なしの幅広QRSが早期出現＋代償性休止。'},
+     note:'<b>PVC（多発性）</b>：同じ形の幅広QRSが早期出現＋代償性休止。'},
+   {k:'mpvc',n:'多源性PVC',en:'Multifocal PVC',d:1,s:{hr:75,pAmp:1,pr:160,qrs:90,rAmp:1,st:0,tAmp:1,noise:.05,special:'mpvc',delta:0},
+     note:'<b>多源性PVC</b>：複数の起源から異なる形のPVCが出現。VFへ移行する危険が高い。'},
    {k:'vt',n:'心室頻拍',en:'V-Tach',d:1,s:{hr:180,pAmp:0,pr:160,qrs:160,rAmp:1.4,st:0,tAmp:-.6,noise:.05,special:'vt',delta:0},
-     note:'<b>VT</b>：幅広QRSの規則的頻拍。無脈ならショック適応。'},
-   {k:'tdp',n:'Torsades',en:'Torsades de P.',d:1,s:{hr:220,pAmp:0,pr:160,qrs:160,rAmp:1,st:0,tAmp:1,noise:.05,special:'tdp',delta:0},
-     note:'<b>トルサード</b>：QRS振幅が紡錘状に変動。MgSO₄。'},
+     note:'<b>VT</b>：幅広QRSの規則的頻拍（単形性）。無脈ならショック適応。'},
+   {k:'tdp',n:'Torsades',en:'Torsades de P.',d:1,s:{hr:220,pAmp:0,pr:160,qrs:160,rAmp:1,st:0,tAmp:-.6,noise:.05,special:'tdp',delta:0},
+     note:'<b>トルサード</b>：QRSが捻れて極性が反転（紡錘状に変動）。MgSO₄。'},
    {k:'vf',n:'心室細動',en:'V-Fib',d:1,s:{hr:200,pAmp:0,pr:160,qrs:90,rAmp:1,st:0,tAmp:1,noise:.1,special:'vf',delta:0},
      note:'<b>VF</b>：無秩序な細動波。<b>ショック適応・即CPR</b>。'},
    {k:'ivr',n:'心室補充調律',en:'Idioventricular',s:{hr:35,pAmp:0,pr:160,qrs:170,rAmp:1.2,st:0,tAmp:-.5,noise:.05,special:'vt',delta:0},
@@ -306,8 +308,10 @@ const CATS=[
      note:'<b>高K血症</b>：テント状T・QRS幅広・P平坦化。'},
    {k:'hypok',n:'低カリウム',en:'Hypokalemia',s:{hr:75,pAmp:1,pr:160,qrs:90,rAmp:1,st:-15,tAmp:.3,noise:.05,special:'uwave',delta:0},
      note:'<b>低K血症</b>：T平低・ST低下・U波出現。'},
+   {k:'hac',n:'発症直後MI',en:'Hyperacute T',s:{hr:80,pAmp:1,pr:160,qrs:95,rAmp:1.1,st:8,tAmp:2.6,noise:.05,special:null,delta:0},
+     note:'<b>発症直後MI</b>：T波増高（hyperacute T）。ST上昇は軽度〜未出現で超急性期。'},
    {k:'stemi',n:'ST上昇(STEMI)',en:'ST Elevation',s:{hr:80,pAmp:1,pr:160,qrs:95,rAmp:1.1,st:35,tAmp:1.6,noise:.05,special:null,delta:0},
-     note:'<b>STEMI</b>：J点からのST上昇。急性冠症候群。'},
+     note:'<b>STEMI（数時間後）</b>：coved型のST上昇。急性冠症候群。'},
    {k:'pace',n:'ペースメーカー',en:'Paced (V)',s:{hr:70,pAmp:0,pr:160,qrs:170,rAmp:1.3,st:0,tAmp:-.6,noise:.04,special:'paced',delta:0},
      note:'<b>心室ペーシング</b>：スパイク直後に幅広QRS。'},
    {k:'pea',n:'PEA',en:'Pulseless Elec.',d:1,s:{hr:40,pAmp:1,pr:160,qrs:110,rAmp:.7,st:0,tAmp:.6,noise:.05,special:null,delta:0},
@@ -327,9 +331,9 @@ function beatWave(t,p){
   // delta wave (WPW): slurred upstroke before R
   if(p.delta){v+=gauss(t,0.475,0.020,0.18*p.rAmp);}
   if(p.vt){
-    // VT/IVR/Torsades: wide, bizarre, monomorphic complex with discordant terminal portion
-    v+=gauss(t,0.50,0.048,1.15*p.rAmp);
-    v+=gauss(t,0.66,0.062,0.55*p.tAmp);
+    // VT/IVR/Torsades/PVC: wide bizarre monomorphic complex with discordant terminal portion
+    v+=gauss(t,0.485,0.038,1.20*p.rAmp);
+    v+=gauss(t,0.625,0.050,1.30*p.tAmp);
   }else{
     v+=gauss(t,0.46,0.010*qrsF,-0.10*p.rAmp);
     v+=gauss(t,0.50,0.012*qrsF,1.0*p.rAmp);
@@ -370,7 +374,7 @@ function currentRR(){return S.hr<=0?999:60/S.hr;}
 
 function startBeat(){
   curType='normal';
-  if(S.special==='pvc'){if(--pvcCtr<=0){curType='pvc';pvcCtr=2+(Math.random()*3|0);}}
+  if(S.special==='pvc'||S.special==='mpvc'){if(--pvcCtr<=0){curType='pvc';pvcCtr=2+(Math.random()*3|0);}}
   else if(S.special==='pac'){if(--pacCtr<=0){curType='pac';pacCtr=3+(Math.random()*3|0);}}
   else if(S.special==='wenck'){if(++wenckN>=4){curType='dropped';wenckN=0;}}
   else if(S.special==='mob2'){if(++mob2Ctr>=3){curType='dropped';mob2Ctr=0;}}
@@ -382,7 +386,15 @@ function startBeat(){
 function paramsForBeat(){
   const p={pAmp:S.pAmp,pr:S.pr,qrs:S.qrs,rAmp:S.rAmp,st:S.st/100,tAmp:S.tAmp,delta:S.delta,
            rsr:0,uwave:(S.special==='uwave'),spike:0};
-  if(curType==='pvc'){p.pAmp=0;p.qrs=185;p.rAmp=1.6;p.tAmp=-.8;p.st=0;p.delta=0;p.vt=1;}
+  if(curType==='pvc'){
+    p.pAmp=0;p.st=0;p.delta=0;p.vt=1;
+    if(S.special==='mpvc'){
+      const r=Math.floor(Math.random()*3);
+      if(r===0){p.qrs=180;p.rAmp=1.5;p.tAmp=-0.8;}
+      else if(r===1){p.qrs=200;p.rAmp=-1.3;p.tAmp=0.7;}
+      else{p.qrs=160;p.rAmp=1.1;p.tAmp=-1.1;}
+    }else{p.qrs=185;p.rAmp=1.6;p.tAmp=-0.8;}
+  }
   else if(curType==='pac'){p.pAmp=1.4;p.pr=110;}
   else if(curType==='vt'){p.pAmp=0;p.qrs=S.qrs;p.rAmp=S.rAmp;p.vt=1;}
   else if(curType==='dropped'){p.rAmp=0;p.tAmp=0;p.st=0;p.delta=0;if(S.special==='wenck')p.pr=160+wenckN*45;}
@@ -422,7 +434,7 @@ function sampleValue(dt){
   if(beatParams.spike && t>0.44 && t<0.455)base+=1.4;
   // torsades amplitude modulation
   let amp=1;
-  if(S.special==='tdp')amp=0.4+0.8*Math.abs(Math.sin(performance.now()/700));
+  if(S.special==='tdp')amp=1.05*Math.sin(performance.now()*0.0028);
   base+=beatWave(t,beatParams)*(S.special==='tdp'?amp:1);
   return base;
 }
