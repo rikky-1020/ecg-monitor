@@ -326,29 +326,35 @@ function beatWave(t,p){
   v+=gauss(t,Math.max(.05,pPos),0.022,0.15*p.pAmp);
   // delta wave (WPW): slurred upstroke before R
   if(p.delta){v+=gauss(t,0.475,0.020,0.18*p.rAmp);}
-  v+=gauss(t,0.46,0.010*qrsF,-0.10*p.rAmp);
-  v+=gauss(t,0.50,0.012*qrsF,1.0*p.rAmp);
-  v+=gauss(t,0.55,0.012*qrsF,-0.25*p.rAmp);
-  // RBBB second R' bump
-  if(p.rsr){v+=gauss(t,0.575,0.016,0.55*p.rAmp);}
-  // ST segment: smooth J-point onset, coved (convex-up) shape for elevation
-  if(p.st>0){
-    if(t>0.555&&t<0.88){
-      const u=(t-0.555)/0.325;
-      const onset=u<0.10?(0.5-0.5*Math.cos(Math.PI*u/0.10)):
-                  u>0.92?(0.5+0.5*Math.cos(Math.PI*(u-0.92)/0.08)):1;
-      const dome=1+0.30*Math.sin(Math.PI*u);
-      v+=p.st*onset*dome;
+  if(p.vt){
+    // VT/IVR/Torsades: wide, bizarre, monomorphic complex with discordant terminal portion
+    v+=gauss(t,0.50,0.048,1.15*p.rAmp);
+    v+=gauss(t,0.66,0.062,0.55*p.tAmp);
+  }else{
+    v+=gauss(t,0.46,0.010*qrsF,-0.10*p.rAmp);
+    v+=gauss(t,0.50,0.012*qrsF,1.0*p.rAmp);
+    v+=gauss(t,0.55,0.012*qrsF,-0.25*p.rAmp);
+    // RBBB second R' bump
+    if(p.rsr){v+=gauss(t,0.575,0.016,0.55*p.rAmp);}
+    // ST segment: smooth J-point onset, coved (convex-up) shape for elevation
+    if(p.st>0){
+      if(t>0.555&&t<0.88){
+        const u=(t-0.555)/0.325;
+        const onset=u<0.10?(0.5-0.5*Math.cos(Math.PI*u/0.10)):
+                    u>0.92?(0.5+0.5*Math.cos(Math.PI*(u-0.92)/0.08)):1;
+        const dome=1+0.30*Math.sin(Math.PI*u);
+        v+=p.st*onset*dome;
+      }
+    }else if(p.st<0){
+      if(t>0.56&&t<0.72){
+        const u=(t-0.56)/0.16;
+        const env=u<0.15?(0.5-0.5*Math.cos(Math.PI*u/0.15)):
+                  u>0.85?(0.5+0.5*Math.cos(Math.PI*(u-0.85)/0.15)):1;
+        v+=p.st*env;
+      }
     }
-  }else if(p.st<0){
-    if(t>0.56&&t<0.72){
-      const u=(t-0.56)/0.16;
-      const env=u<0.15?(0.5-0.5*Math.cos(Math.PI*u/0.15)):
-                u>0.85?(0.5+0.5*Math.cos(Math.PI*(u-0.85)/0.15)):1;
-      v+=p.st*env;
-    }
+    v+=gauss(t,0.74,0.05,0.30*p.tAmp);
   }
-  v+=gauss(t,0.74,0.05,0.30*p.tAmp);
   // U wave (hypokalemia)
   if(p.uwave)v+=gauss(t,0.88,0.03,0.08);
   return v;
@@ -376,9 +382,9 @@ function startBeat(){
 function paramsForBeat(){
   const p={pAmp:S.pAmp,pr:S.pr,qrs:S.qrs,rAmp:S.rAmp,st:S.st/100,tAmp:S.tAmp,delta:S.delta,
            rsr:0,uwave:(S.special==='uwave'),spike:0};
-  if(curType==='pvc'){p.pAmp=0;p.qrs=185;p.rAmp=1.6;p.tAmp=-.8;p.st=0;p.delta=0;}
+  if(curType==='pvc'){p.pAmp=0;p.qrs=185;p.rAmp=1.6;p.tAmp=-.8;p.st=0;p.delta=0;p.vt=1;}
   else if(curType==='pac'){p.pAmp=1.4;p.pr=110;}
-  else if(curType==='vt'){p.pAmp=0;p.qrs=S.qrs;p.rAmp=S.rAmp;}
+  else if(curType==='vt'){p.pAmp=0;p.qrs=S.qrs;p.rAmp=S.rAmp;p.vt=1;}
   else if(curType==='dropped'){p.rAmp=0;p.tAmp=0;p.st=0;p.delta=0;if(S.special==='wenck')p.pr=160+wenckN*45;}
   else if(curType==='rbbb'){p.rsr=1;p.qrs=140;}
   else if(curType==='paced'){p.pAmp=0;p.spike=1;p.qrs=175;p.rAmp=1.3;p.tAmp=-.6;}
