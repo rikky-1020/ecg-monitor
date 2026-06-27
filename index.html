@@ -1244,34 +1244,71 @@ function drawBeatCanvas(){
   lCurType=snapType; lWenckN=0;
   const p=lParamsForBeat();
   lCurType=savCT; lWenckN=savWn;
-  ctxBeat.lineWidth=2.6;ctxBeat.strokeStyle=css('--trace');
-  ctxBeat.shadowColor=css('--trace-glow');ctxBeat.shadowBlur=8;ctxBeat.lineJoin='round';
+
+  // Layout: title at top, beat in middle, component labels at bottom
+  const padTop=26, padBot=24, padX=14;
+  const drawX0=padX, drawX1=beatW-padX, drawW=drawX1-drawX0;
+  const drawY0=padTop, drawY1=beatH-padBot, drawH=drawY1-drawY0;
+  const mid=drawY0+drawH*0.62;       // R wave gets more room above mid
+  const gain=drawH*0.40;              // significantly larger gain
+  const tStart=0.08, tEnd=0.97, tSpan=tEnd-tStart;   // zoom: skip empty edges
+  const tToX=tt=>drawX0+((tt-tStart)/tSpan)*drawW;
+
+  // Baseline (faint isoelectric line for reference)
+  ctxBeat.strokeStyle=css('--grid-bold');ctxBeat.lineWidth=1;
+  ctxBeat.beginPath();ctxBeat.moveTo(drawX0,mid);ctxBeat.lineTo(drawX1,mid);ctxBeat.stroke();
+
+  // Trace
+  ctxBeat.lineWidth=3.2;ctxBeat.strokeStyle=css('--trace');
+  ctxBeat.shadowColor=css('--trace-glow');ctxBeat.shadowBlur=10;ctxBeat.lineJoin='round';
   ctxBeat.beginPath();
-  const mid=beatH*0.55, gain=beatH*0.20;
   const N=600;
   for(let i=0;i<N;i++){
-    const t=i/(N-1);
+    const tt=tStart+(i/(N-1))*tSpan;
     let v;
     if(Sl.special==='vf'){
-      v=0.6*Math.sin(t*2*Math.PI*7.5+1.2)*(0.7+0.3*Math.sin(t*2*Math.PI*23));
+      v=0.6*Math.sin(tt*2*Math.PI*7.5+1.2)*(0.7+0.3*Math.sin(tt*2*Math.PI*23));
     }else if(Sl.special==='asys'){
       v=0;
     }else{
-      v=beatWave(t,p);
-      if(Sl.special==='afib')v+=0.04*Math.sin(t*2*Math.PI*7.3);
-      if(Sl.special==='aflut'){const f=(t*5)%1;v+=0.12*(f<0.7?f/0.7:(1-(f-0.7)/0.3))-0.06;}
-      if(Sl.special==='cavb')v+=gauss(t,0.5,0.04,0.13*Sl.pAmp);
+      v=beatWave(tt,p);
+      if(Sl.special==='afib')v+=0.04*Math.sin(tt*2*Math.PI*7.3);
+      if(Sl.special==='aflut'){const f=(tt*5)%1;v+=0.12*(f<0.7?f/0.7:(1-(f-0.7)/0.3))-0.06;}
+      if(Sl.special==='cavb')v+=gauss(tt,0.5,0.04,0.13*Sl.pAmp);
     }
-    const x=(i/(N-1))*beatW;
+    const x=drawX0+(i/(N-1))*drawW;
     const y=mid-v*gain;
     i?ctxBeat.lineTo(x,y):ctxBeat.moveTo(x,y);
   }
   ctxBeat.stroke();
   ctxBeat.shadowBlur=0;
-  // Label
+
+  // Title at top
   ctxBeat.fillStyle=css('--amber');
-  ctxBeat.font="11px ui-monospace,Menlo,monospace";
-  ctxBeat.fillText(learnSelectedItem.n+' ('+learnSelectedItem.en+')',10,16);
+  ctxBeat.font="bold 12px ui-monospace,Menlo,monospace";
+  ctxBeat.textAlign='left';
+  ctxBeat.fillText(learnSelectedItem.n+' ('+learnSelectedItem.en+')',drawX0,17);
+
+  // Component labels for normal-shaped beats only
+  if(!p.vt && Sl.special!=='vf' && Sl.special!=='asys' && p.rAmp>0.5){
+    ctxBeat.fillStyle=css('--ink-dim');
+    ctxBeat.font="bold 11px ui-monospace,Menlo,monospace";
+    ctxBeat.textAlign='center';
+    const labelY=beatH-8;
+    if(p.pAmp>0.3){
+      const pT=Math.max(0.05,0.50-0.20*(p.pr/160));
+      ctxBeat.fillText('P',tToX(pT),labelY);
+    }else if(p.pAmp<-0.3){
+      const pT=Math.max(0.05,0.50-0.20*(p.pr/160));
+      ctxBeat.fillText('P(逆)',tToX(pT),labelY);
+    }
+    if(p.delta) ctxBeat.fillText('δ',tToX(0.475),labelY);
+    ctxBeat.fillText('QRS',tToX(0.50),labelY);
+    ctxBeat.fillText('T',tToX(0.82),labelY);
+    if(p.uwave) ctxBeat.fillText('U',tToX(0.90),labelY);
+    if(p.spike) ctxBeat.fillText('spike',tToX(0.448),labelY);
+    ctxBeat.textAlign='left';
+  }
 }
 
 function renderLearn(ts){
@@ -1311,7 +1348,7 @@ function setupLearnCanvases(){
   cvFlow.style.width=lW+'px';cvFlow.style.height=lH+'px';
   cvFlow.width=lW*ratio;cvFlow.height=lH*ratio;
   ctxFlow.setTransform(ratio,0,0,ratio,0,0);
-  beatW=Math.max(200,window.innerWidth-28); beatH=210;
+  beatW=Math.max(200,window.innerWidth-28); beatH=260;
   cvBeat.style.width=beatW+'px';cvBeat.style.height=beatH+'px';
   cvBeat.width=beatW*ratio;cvBeat.height=beatH*ratio;
   ctxBeat.setTransform(ratio,0,0,ratio,0,0);
