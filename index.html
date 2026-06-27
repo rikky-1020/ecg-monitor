@@ -517,10 +517,16 @@ function paramsForBeat(){
   }
   else if(curType==='pac'){p.pAmp=1.4;p.pr=110;}
   else if(curType==='vt'){p.pAmp=0;p.qrs=S.qrs;p.rAmp=S.rAmp;p.vt=1;}
-  else if(curType==='dropped'){p.rAmp=0;p.tAmp=0;p.st=0;p.delta=0;if(S.special==='wenck')p.pr=160+wenckN*45;}
+  else if(curType==='dropped'){p.rAmp=0;p.tAmp=0;p.st=0;p.delta=0;}
   else if(curType==='rbbb'){p.rsr=1;p.qrs=140;}
   else if(curType==='paced'){p.pAmp=0;p.spike=1;p.qrs=175;p.rAmp=1.3;p.tAmp=-.6;}
   else if(curType==='junc'){p.pAmp=-0.6;p.pr=90;}
+  // Wenckebach PR progression: beats 1-3 of cycle get progressively longer PR;
+  // the dropped beat shows only P at the longest PR (no QRS follows).
+  if(S.special==='wenck'){
+    if(curType==='normal')      p.pr=160+Math.max(0,wenckN-1)*60;  // 160,220,280
+    else if(curType==='dropped') p.pr=160+3*60;                     // 340
+  }
   return p;
 }
 
@@ -1179,10 +1185,16 @@ function lParamsForBeat(){
   }
   else if(lCurType==='pac'){p.pAmp=1.4;p.pr=110;}
   else if(lCurType==='vt'){p.pAmp=0;p.qrs=Sl.qrs;p.rAmp=Sl.rAmp;p.vt=1;}
-  else if(lCurType==='dropped'){p.rAmp=0;p.tAmp=0;p.st=0;p.delta=0;if(Sl.special==='wenck')p.pr=160+lWenckN*45;}
+  else if(lCurType==='dropped'){p.rAmp=0;p.tAmp=0;p.st=0;p.delta=0;}
   else if(lCurType==='rbbb'){p.rsr=1;p.qrs=140;}
   else if(lCurType==='paced'){p.pAmp=0;p.spike=1;p.qrs=175;p.rAmp=1.3;p.tAmp=-.6;}
   else if(lCurType==='junc'){p.pAmp=-0.6;p.pr=90;}
+  // Wenckebach PR progression: beats 1-3 of cycle get progressively longer PR;
+  // the dropped beat shows only P at the longest PR (no QRS follows).
+  if(Sl.special==='wenck'){
+    if(lCurType==='normal')      p.pr=160+Math.max(0,lWenckN-1)*60;  // 160,220,280
+    else if(lCurType==='dropped') p.pr=160+3*60;                      // 340
+  }
   return p;
 }
 
@@ -1233,9 +1245,12 @@ function drawBeatCanvas(){
   ctxBeat.fillStyle=css('--bg');ctxBeat.fillRect(0,0,beatW,beatH);
   drawGridOn(ctxBeat,beatW,beatH);
 
-  // --- 2.6拍ぶんを実ロジックでサンプリングして静止描画 ---
-  const rr = lCurrentRR();                 // 1拍の秒数（HR依存で2-3拍が収まる）
-  const beats = 2.6;
+  // --- 複数拍ぶんを実ロジックでサンプリングして静止描画 ---
+  // リズム周期に応じて表示拍数を変える
+  const rr = lCurrentRR();
+  let beats = 2.6;
+  if(Sl.special==='wenck'||Sl.special==='mob2') beats = 4.6;       // 4拍周期＋少し
+  else if(Sl.special==='pvc'||Sl.special==='mpvc'||Sl.special==='pac') beats = 4.0;
   const N = 1000;
   const dt = (beats*rr)/N;
 
