@@ -400,6 +400,8 @@ const CATS=[
      note:'<b>多源性PVC</b>：複数の起源から異なる形のPVCが出現。VFへ移行する危険が高い。'},
    {k:'ront',n:'R on T 型PVC',en:'R on T VPC',d:1,s:{hr:75,pAmp:1,pr:160,qrs:90,rAmp:1,st:0,tAmp:1,noise:.05,special:'ront',delta:0},
      note:'<b>R on T 型PVC</b>：先行QRSのT波に重なる早期PVC。VFへ移行する危険が極めて高い。'},
+   {k:'srun',n:'ショートラン',en:'Short Run / NSVT',d:1,s:{hr:75,pAmp:1,pr:160,qrs:90,rAmp:1,st:0,tAmp:1,noise:.05,special:'srun',delta:0},
+     note:'<b>ショートラン</b>：3連発以上の心室期外収縮（非持続性VT）。VFへ移行する危険が高い「連発」タイプ。'},
    {k:'vt',n:'心室頻拍',en:'V-Tach',d:1,s:{hr:180,pAmp:0,pr:160,qrs:160,rAmp:1.4,st:0,tAmp:-.6,noise:.05,special:'vt',delta:0},
      note:'<b>VT</b>：幅広QRSの規則的頻拍（単形性）。無脈ならショック適応。'},
    {k:'tdp',n:'Torsades',en:'Torsades de P.',d:1,s:{hr:220,pAmp:0,pr:160,qrs:160,rAmp:1,st:0,tAmp:-.6,noise:.05,special:'tdp',delta:0},
@@ -491,7 +493,7 @@ function beatWave(t,p){
 const FS=240, SPAN=5;
 let buf=new Float32Array(FS*SPAN), wIdx=0;
 let beatClock=0, rrCurrent=60/72, lastTs=0;
-let wenckN=0, pvcCtr=2, pacCtr=3, mob2Ctr=0, cavbP=0, vfSeed=Math.random()*1e3, ronTOverlay=false;
+let wenckN=0, pvcCtr=2, pacCtr=3, mob2Ctr=0, cavbP=0, vfSeed=Math.random()*1e3, ronTOverlay=false, srunRemaining=0;
 let curType='normal', beatParams={};
 
 function currentRR(){return S.hr<=0?999:60/S.hr;}
@@ -500,6 +502,10 @@ function startBeat(){
   curType='normal';
   if(S.special==='pvc'||S.special==='mpvc'){if(--pvcCtr<=0){curType='pvc';pvcCtr=2+(Math.random()*3|0);}}
   else if(S.special==='ront'){ronTOverlay=false;if(--pvcCtr<=0){ronTOverlay=true;pvcCtr=3+(Math.random()*2|0);}}
+  else if(S.special==='srun'){
+    if(srunRemaining>0){curType='pvc';srunRemaining--;}
+    else if(--pvcCtr<=0){curType='pvc';srunRemaining=2+(Math.random()*3|0);pvcCtr=4+(Math.random()*3|0);}
+  }
   else if(S.special==='pac'){if(--pacCtr<=0){curType='pac';pacCtr=3+(Math.random()*3|0);}}
   else if(S.special==='wenck'){if(++wenckN>=4){curType='dropped';wenckN=0;}}
   else if(S.special==='mob2'){if(++mob2Ctr>=3){curType='dropped';mob2Ctr=0;}}
@@ -556,7 +562,7 @@ function sampleValue(dt){
     rrCurrent=(S.special==='afib')?rr*(0.5+Math.random()):rr;
     startBeat();
     // PAC / PVC come early
-    if(curType==='pac'||curType==='pvc')rrCurrent=rr*0.6;
+    if(curType==='pac'||curType==='pvc')rrCurrent=rr*(S.special==='srun'?0.45:0.6);
     beatParams=paramsForBeat();
     triggerHeart();
   }
@@ -650,7 +656,7 @@ function applyRhythm(it,btn){
   Object.assign(S,it.s);
   document.getElementById('rNote').innerHTML=it.note;
   // reset bookkeeping
-  wenckN=0;pvcCtr=2;pacCtr=3;mob2Ctr=0;cavbP=0;ronTOverlay=false;beatClock=0;rrCurrent=currentRR();
+  wenckN=0;pvcCtr=2;pacCtr=3;mob2Ctr=0;cavbP=0;ronTOverlay=false;srunRemaining=0;beatClock=0;rrCurrent=currentRR();
   beatParams=paramsForBeat();
   syncCondUI();
   document.getElementById('hrBig').textContent=S.hr;
@@ -886,6 +892,23 @@ const LESSON = {
     urgency:
       "多源性、連発（心室頻拍）、R on Tの3タイプはとくに心室細動に移行する危険が高い。これ以外でも多発性心室期外収縮（6/分以上）も危険と考える。\n" +
       "心室細動に移行する危険が高いため、いつでも電気ショックが実施できるよう準備し、観察を怠らない。",
+  },
+
+  srun: {
+    read:
+      "3連発以上連続した心室期外収縮（非持続性VT＝non-sustained VT, NSVT）。\n" +
+      "幅広QRSが3〜5拍ほど連なった後、通常の調律に復帰する。連続30秒未満で消失するものを NSVT、それ以上続けば持続性VTに分類。",
+    cause:
+      "急性心筋梗塞、心筋症、電解質異常（低K・低Mg）、QT延長、薬剤毒性などで出現。\n" +
+      "基礎心疾患を伴う場合は予後不良との関連が指摘される。",
+    ddx:
+      "持続性VT：30秒以上、または血行動態破綻で速やかな介入を要するもの。\n" +
+      "ショートラン：3連発以上で30秒未満。\n" +
+      "教科書（救急救命士標準テキスト）の「危険な期外収縮」3タイプ＝多源性・連発（VT）・R on T。",
+    urgency:
+      "心室細動・持続性VTへ移行する危険が高く、警戒継続。電気ショック準備＋背景病態（虚血・電解質・QT延長）の検索。\n" +
+      "基礎心疾患を有する例では循環器専門医療機関への搬送を考慮。\n" +
+      "[出典: 救急救命士標準テキスト「連発（心室頻拍）」、MSDマニュアル「心室頻拍」]",
   },
 
   ront: {
@@ -1178,7 +1201,7 @@ const LESSON = {
 const Sl={hr:72,pAmp:1,pr:160,qrs:90,rAmp:1,st:0,tAmp:1,noise:.04,wander:0,special:null,delta:0};
 let lBuf=null, lWIdx=0, lW=0, lH=0;
 let lBeatClock=0, lRrCurrent=60/72, lLastTs=0;
-let lWenckN=0, lPvcCtr=2, lPacCtr=3, lMob2Ctr=0, lCavbP=0, lVfSeed=Math.random()*1e3, lRonTOverlay=false;
+let lWenckN=0, lPvcCtr=2, lPacCtr=3, lMob2Ctr=0, lCavbP=0, lVfSeed=Math.random()*1e3, lRonTOverlay=false, lSrunRemaining=0;
 let lCurType='normal', lBeatParams={};
 let cvFlow=null, ctxFlow=null, cvBeat=null, ctxBeat=null, beatW=0, beatH=0;
 let learnAnimating=false, learnLooping=false, learnInited=false;
@@ -1190,6 +1213,10 @@ function lStartBeat(){
   lCurType='normal';
   if(Sl.special==='pvc'||Sl.special==='mpvc'){if(--lPvcCtr<=0){lCurType='pvc';lPvcCtr=2+(Math.random()*3|0);}}
   else if(Sl.special==='ront'){lRonTOverlay=false;if(--lPvcCtr<=0){lRonTOverlay=true;lPvcCtr=3+(Math.random()*2|0);}}
+  else if(Sl.special==='srun'){
+    if(lSrunRemaining>0){lCurType='pvc';lSrunRemaining--;}
+    else if(--lPvcCtr<=0){lCurType='pvc';lSrunRemaining=2+(Math.random()*3|0);lPvcCtr=4+(Math.random()*3|0);}
+  }
   else if(Sl.special==='pac'){if(--lPacCtr<=0){lCurType='pac';lPacCtr=3+(Math.random()*3|0);}}
   else if(Sl.special==='wenck'){if(++lWenckN>=4){lCurType='dropped';lWenckN=0;}}
   else if(Sl.special==='mob2'){if(++lMob2Ctr>=3){lCurType='dropped';lMob2Ctr=0;}}
@@ -1245,7 +1272,7 @@ function lSampleValue(dt){
     lBeatClock-=lRrCurrent;
     lRrCurrent=(Sl.special==='afib')?rr*(0.5+Math.random()):rr;
     lStartBeat();
-    if(lCurType==='pac'||lCurType==='pvc')lRrCurrent=rr*0.6;
+    if(lCurType==='pac'||lCurType==='pvc')lRrCurrent=rr*(Sl.special==='srun'?0.45:0.6);
     lBeatParams=lParamsForBeat();
   }
   const t=lBeatClock/lRrCurrent;
@@ -1283,6 +1310,7 @@ function drawBeatCanvas(){
   const rr = lCurrentRR();
   let beats = 2.6;
   if(Sl.special==='wenck'||Sl.special==='mob2') beats = 4.6;       // 4拍周期＋少し
+  else if(Sl.special==='srun') beats = 6.0;                         // 通常拍＋連発＋通常拍を含める
   else if(Sl.special==='pvc'||Sl.special==='mpvc'||Sl.special==='pac'||Sl.special==='ront') beats = 4.0;
   const N = 1000;
   const dt = (beats*rr)/N;
@@ -1402,7 +1430,7 @@ function updateLessonUI(k){
 function lApplyRhythm(item){
   learnSelectedItem=item;
   Object.assign(Sl,item.s);
-  lWenckN=0;lPvcCtr=2;lPacCtr=3;lMob2Ctr=0;lCavbP=0;lRonTOverlay=false;lBeatClock=0;lRrCurrent=lCurrentRR();
+  lWenckN=0;lPvcCtr=2;lPacCtr=3;lMob2Ctr=0;lCavbP=0;lRonTOverlay=false;lSrunRemaining=0;lBeatClock=0;lRrCurrent=lCurrentRR();
   lBeatParams=lParamsForBeat();
   if(lBuf)lBuf.fill(0);lWIdx=0;
   drawBeatCanvas();
