@@ -1232,83 +1232,50 @@ function drawBeatCanvas(){
   if(!ctxBeat||!learnSelectedItem)return;
   ctxBeat.fillStyle=css('--bg');ctxBeat.fillRect(0,0,beatW,beatH);
   drawGridOn(ctxBeat,beatW,beatH);
-  // Choose representative beat type for static snapshot
-  const k=learnSelectedItem.k;
-  let snapType='normal';
-  if(k==='pvc'||k==='mpvc')snapType='pvc';
-  else if(Sl.special==='vt'||Sl.special==='tdp')snapType='vt';
-  else if(Sl.special==='rbbb')snapType='rbbb';
-  else if(Sl.special==='paced')snapType='paced';
-  else if(Sl.special==='junc')snapType='junc';
-  const savCT=lCurType, savWn=lWenckN;
-  lCurType=snapType; lWenckN=0;
-  const p=lParamsForBeat();
-  lCurType=savCT; lWenckN=savWn;
 
-  // Layout: title at top, beat in middle, component labels at bottom
-  const padTop=26, padBot=24, padX=14;
-  const drawX0=padX, drawX1=beatW-padX, drawW=drawX1-drawX0;
-  const drawY0=padTop, drawY1=beatH-padBot, drawH=drawY1-drawY0;
-  const mid=drawY0+drawH*0.62;       // R wave gets more room above mid
-  const gain=drawH*0.40;              // significantly larger gain
-  const tStart=0.08, tEnd=0.97, tSpan=tEnd-tStart;   // zoom: skip empty edges
-  const tToX=tt=>drawX0+((tt-tStart)/tSpan)*drawW;
+  // --- 2.6拍ぶんを実ロジックでサンプリングして静止描画 ---
+  const rr = lCurrentRR();                 // 1拍の秒数（HR依存で2-3拍が収まる）
+  const beats = 2.6;
+  const N = 1000;
+  const dt = (beats*rr)/N;
 
-  // Baseline (faint isoelectric line for reference)
-  ctxBeat.strokeStyle=css('--grid-bold');ctxBeat.lineWidth=1;
-  ctxBeat.beginPath();ctxBeat.moveTo(drawX0,mid);ctxBeat.lineTo(drawX1,mid);ctxBeat.stroke();
+  // 現在の学習アニメ状態を退避
+  const sav={clock:lBeatClock,rrCur:lRrCurrent,curType:lCurType,bp:lBeatParams,
+             wenck:lWenckN,pvc:lPvcCtr,pac:lPacCtr,mob2:lMob2Ctr,cavb:lCavbP,vf:lVfSeed};
 
-  // Trace
-  ctxBeat.lineWidth=3.2;ctxBeat.strokeStyle=css('--trace');
-  ctxBeat.shadowColor=css('--trace-glow');ctxBeat.shadowBlur=10;ctxBeat.lineJoin='round';
+  // クリーンな初期状態から開始（先頭が拍頭から始まるよう調整）
+  lBeatClock=0; lRrCurrent=rr; lCurType='normal';
+  lWenckN=0; lPvcCtr=2; lPacCtr=3; lMob2Ctr=0; lCavbP=0; lVfSeed=0;
+  lBeatParams=lParamsForBeat();
+
+  const samples=new Array(N);
+  for(let i=0;i<N;i++){ samples[i]=lSampleValue(dt); }
+
+  // 振幅の自動スケール（PVCなど大振幅でも切れないように）
+  let amax=0.1;
+  for(let i=0;i<N;i++){const a=Math.abs(samples[i]); if(a>amax)amax=a;}
+  const mid=beatH*0.5;
+  const gain=(beatH*0.40)/amax;            // 画面高の±40%に収まる
+
+  ctxBeat.lineWidth=2.6;ctxBeat.strokeStyle=css('--trace');
+  ctxBeat.shadowColor=css('--trace-glow');ctxBeat.shadowBlur=8;ctxBeat.lineJoin='round';
   ctxBeat.beginPath();
-  const N=600;
   for(let i=0;i<N;i++){
-    const tt=tStart+(i/(N-1))*tSpan;
-    let v;
-    if(Sl.special==='vf'){
-      v=0.6*Math.sin(tt*2*Math.PI*7.5+1.2)*(0.7+0.3*Math.sin(tt*2*Math.PI*23));
-    }else if(Sl.special==='asys'){
-      v=0;
-    }else{
-      v=beatWave(tt,p);
-      if(Sl.special==='afib')v+=0.04*Math.sin(tt*2*Math.PI*7.3);
-      if(Sl.special==='aflut'){const f=(tt*5)%1;v+=0.12*(f<0.7?f/0.7:(1-(f-0.7)/0.3))-0.06;}
-      if(Sl.special==='cavb')v+=gauss(tt,0.5,0.04,0.13*Sl.pAmp);
-    }
-    const x=drawX0+(i/(N-1))*drawW;
-    const y=mid-v*gain;
+    const x=(i/(N-1))*beatW;
+    const y=mid-samples[i]*gain;
     i?ctxBeat.lineTo(x,y):ctxBeat.moveTo(x,y);
   }
   ctxBeat.stroke();
   ctxBeat.shadowBlur=0;
 
-  // Title at top
-  ctxBeat.fillStyle=css('--amber');
-  ctxBeat.font="bold 12px ui-monospace,Menlo,monospace";
-  ctxBeat.textAlign='left';
-  ctxBeat.fillText(learnSelectedItem.n+' ('+learnSelectedItem.en+')',drawX0,17);
+  // 状態を復帰（流れる波形アニメに影響させない）
+  lBeatClock=sav.clock;lRrCurrent=sav.rrCur;lCurType=sav.curType;lBeatParams=sav.bp;
+  lWenckN=sav.wenck;lPvcCtr=sav.pvc;lPacCtr=sav.pac;lMob2Ctr=sav.mob2;lCavbP=sav.cavb;lVfSeed=sav.vf;
 
-  // Component labels for normal-shaped beats only
-  if(!p.vt && Sl.special!=='vf' && Sl.special!=='asys' && p.rAmp>0.5){
-    ctxBeat.fillStyle=css('--ink-dim');
-    ctxBeat.font="bold 11px ui-monospace,Menlo,monospace";
-    ctxBeat.textAlign='center';
-    const labelY=beatH-8;
-    if(p.pAmp>0.3){
-      const pT=Math.max(0.05,0.50-0.20*(p.pr/160));
-      ctxBeat.fillText('P',tToX(pT),labelY);
-    }else if(p.pAmp<-0.3){
-      const pT=Math.max(0.05,0.50-0.20*(p.pr/160));
-      ctxBeat.fillText('P(逆)',tToX(pT),labelY);
-    }
-    if(p.delta) ctxBeat.fillText('δ',tToX(0.475),labelY);
-    ctxBeat.fillText('QRS',tToX(0.50),labelY);
-    ctxBeat.fillText('T',tToX(0.82),labelY);
-    if(p.uwave) ctxBeat.fillText('U',tToX(0.90),labelY);
-    if(p.spike) ctxBeat.fillText('spike',tToX(0.448),labelY);
-    ctxBeat.textAlign='left';
-  }
+  // ラベル
+  ctxBeat.fillStyle=css('--amber');
+  ctxBeat.font="11px ui-monospace,Menlo,monospace";
+  ctxBeat.fillText(learnSelectedItem.n+' ('+learnSelectedItem.en+')',10,16);
 }
 
 function renderLearn(ts){
