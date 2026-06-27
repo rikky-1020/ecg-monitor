@@ -124,9 +124,100 @@
   .note{font-size:11px;line-height:1.6;color:var(--ink-dim);
     border-top:1px solid var(--panel-line);padding-top:12px;margin-top:4px}
   .note b{color:var(--amber)}
+
+  /* ===== Mode system ===== */
+  .mode-screen{display:none}
+  body.mode-select #mode-select,
+  body.mode-monitor #monitor-mode,
+  body.mode-learn #learn-mode{display:block}
+
+  /* Monitor mode back button (small floating chip) */
+  .mode-back-btn{position:absolute;top:calc(env(safe-area-inset-top,0) + 8px);left:10px;z-index:6;
+    background:rgba(7,20,13,.78);color:var(--ink);border:1px solid var(--panel-line);
+    padding:6px 11px;border-radius:6px;font-family:var(--mono);font-size:11px;
+    letter-spacing:.05em;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent}
+
+  /* ===== Mode select screen ===== */
+  #mode-select{position:absolute;inset:0;background:var(--bg);
+    align-items:center;justify-content:center;flex-direction:column;padding:24px;overflow-y:auto}
+  body.mode-select #mode-select{display:flex}
+  .ms-title{font-size:22px;color:var(--trace);text-shadow:0 0 12px var(--trace-glow);
+    letter-spacing:.08em;margin-bottom:6px;font-weight:700}
+  .ms-sub{font-size:11px;color:var(--ink-dim);letter-spacing:.16em;
+    margin-bottom:30px;text-transform:uppercase}
+  .ms-card{width:100%;max-width:360px;display:flex;flex-direction:column;gap:20px}
+  .ms-item{display:flex;flex-direction:column;gap:6px}
+  .ms-btn{background:#0e2417;border:1px solid var(--panel-line);color:var(--trace);
+    font-family:var(--mono);font-size:17px;padding:22px;border-radius:12px;cursor:pointer;
+    letter-spacing:.08em;font-weight:700;text-shadow:0 0 8px var(--trace-glow);
+    -webkit-tap-highlight-color:transparent}
+  .ms-btn:active{background:var(--trace);color:#04130a;text-shadow:none}
+  .ms-desc{font-size:11px;color:var(--ink-dim);line-height:1.6;padding:0 6px;letter-spacing:.04em;margin:0}
+
+  /* ===== Learn mode ===== */
+  #learn-mode{position:absolute;inset:0;background:var(--bg);overflow-y:auto;
+    padding:calc(env(safe-area-inset-top,0) + 44px) 0 env(safe-area-inset-bottom,0)}
+  .learn-header{position:fixed;top:0;left:0;right:0;z-index:5;
+    background:var(--panel);border-bottom:1px solid var(--panel-line);
+    padding:calc(env(safe-area-inset-top,0) + 4px) 12px 8px;
+    display:flex;align-items:flex-end;justify-content:space-between}
+  .back-link{background:none;border:none;color:var(--trace);
+    font-family:var(--mono);font-size:12px;cursor:pointer;padding:4px 0;
+    letter-spacing:.05em;-webkit-tap-highlight-color:transparent;flex:0 0 110px;text-align:left}
+  .learn-title{font-size:12px;color:var(--amber);letter-spacing:.12em;
+    text-transform:uppercase;flex:1;text-align:center}
+  .learn-pad{flex:0 0 110px}
+
+  .learn-rhythms{padding:10px 12px 4px}
+  .learn-rhythms .cat-title{font-size:10px;letter-spacing:.16em;color:var(--ink-dim);
+    text-transform:uppercase;margin:14px 0 6px}
+  .learn-rhythms .cat-title:first-child{margin-top:0}
+  .learn-rhythms .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .learn-rhythms .chip{background:#0e2417;border:1px solid var(--panel-line);color:var(--ink);
+    font-family:var(--mono);font-size:11px;padding:8px;border-radius:8px;text-align:left;
+    line-height:1.25;cursor:pointer;transition:.12s;-webkit-tap-highlight-color:transparent}
+  .learn-rhythms .chip span{display:block;font-size:9px;color:var(--ink-dim);margin-top:2px;letter-spacing:.03em}
+  .learn-rhythms .chip.on{background:var(--trace);color:#04130a;border-color:var(--trace);font-weight:700}
+  .learn-rhythms .chip.on span{color:rgba(4,19,10,.7)}
+
+  .learn-canvases{padding:8px 0;border-top:1px solid var(--panel-line);
+    border-bottom:1px solid var(--panel-line);margin:12px 0;background:#02080580}
+  .learn-section{padding:6px 14px}
+  .learn-label{font-size:10px;letter-spacing:.16em;color:var(--ink-dim);
+    text-transform:uppercase;margin-bottom:4px}
+  .learn-section canvas{display:block;background:var(--bg);
+    border:1px solid var(--panel-line);border-radius:6px}
+
+  .learn-lesson{padding:8px 14px 36px}
+  .lesson-block{margin-bottom:18px}
+  .lesson-block h3{font-size:12px;color:var(--amber);letter-spacing:.06em;
+    margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--panel-line);font-weight:700}
+  .lesson-text{font-size:13px;line-height:1.7;color:var(--ink);white-space:pre-wrap;
+    min-height:1.5em;margin:0;font-family:inherit}
+  .lesson-text.placeholder{color:#5a7d6b;font-style:italic;opacity:.6}
 </style>
 </head>
 <body>
+
+<!-- ===== Mode Select ===== -->
+<div id="mode-select" class="mode-screen">
+  <h1 class="ms-title">ECG モニター</h1>
+  <p class="ms-sub">モードを選択</p>
+  <div class="ms-card">
+    <div class="ms-item">
+      <button class="ms-btn" data-mode="monitor">モニターモード</button>
+      <p class="ms-desc">全画面ECGモニター。リズム選択・心拍数・条件調整など、シミュレータとしての操作。</p>
+    </div>
+    <div class="ms-item">
+      <button class="ms-btn" data-mode="learn">学習モード</button>
+      <p class="ms-desc">波形を1つずつ拡大表示しながら、特徴・原因・鑑別・緊急度を学ぶ。</p>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Monitor Mode (existing app, wrapped) ===== -->
+<div id="monitor-mode" class="mode-screen">
+  <button class="mode-back-btn" data-back="select">≡ モード</button>
   <canvas id="cv"></canvas>
 
   <div class="status">
@@ -233,6 +324,33 @@
       </div>
     </div>
   </div>
+</div><!-- /#monitor-mode -->
+
+<!-- ===== Learn Mode ===== -->
+<div id="learn-mode" class="mode-screen">
+  <header class="learn-header">
+    <button class="back-link" data-back="select">← モード選択</button>
+    <span class="learn-title">学習モード</span>
+    <span class="learn-pad"></span>
+  </header>
+  <div class="learn-rhythms" id="learn-rhythms"></div>
+  <div class="learn-canvases">
+    <div class="learn-section">
+      <div class="learn-label">流れる波形</div>
+      <canvas id="cv-flow"></canvas>
+    </div>
+    <div class="learn-section">
+      <div class="learn-label">1拍分の拡大図</div>
+      <canvas id="cv-beat"></canvas>
+    </div>
+  </div>
+  <div class="learn-lesson">
+    <div class="lesson-block"><h3>① 波形の特徴・読み方</h3><p class="lesson-text" id="lesson-read"></p></div>
+    <div class="lesson-block"><h3>② 原因疾患・背景</h3><p class="lesson-text" id="lesson-cause"></p></div>
+    <div class="lesson-block"><h3>③ 鑑別ポイント</h3><p class="lesson-text" id="lesson-ddx"></p></div>
+    <div class="lesson-block"><h3>④ 緊急度・処置</h3><p class="lesson-text" id="lesson-urgency"></p></div>
+  </div>
+</div>
 
 <script>
 (()=>{
@@ -599,6 +717,288 @@ sheet.addEventListener('touchmove',e=>{
 
 // init
 resize();beatParams=paramsForBeat();syncQuick();requestAnimationFrame(render);
+
+// ============================================================================
+//  LESSON DATA — medical content to be filled in by user (keyed by rhythm k)
+// ============================================================================
+const LESSON={
+  nsr:   {read:"",cause:"",ddx:"",urgency:""},
+  sb:    {read:"",cause:"",ddx:"",urgency:""},
+  st:    {read:"",cause:"",ddx:"",urgency:""},
+  junc:  {read:"",cause:"",ddx:"",urgency:""},
+  afib:  {read:"",cause:"",ddx:"",urgency:""},
+  afl:   {read:"",cause:"",ddx:"",urgency:""},
+  psvt:  {read:"",cause:"",ddx:"",urgency:""},
+  pac:   {read:"",cause:"",ddx:"",urgency:""},
+  wpw:   {read:"",cause:"",ddx:"",urgency:""},
+  pvc:   {read:"",cause:"",ddx:"",urgency:""},
+  mpvc:  {read:"",cause:"",ddx:"",urgency:""},
+  vt:    {read:"",cause:"",ddx:"",urgency:""},
+  tdp:   {read:"",cause:"",ddx:"",urgency:""},
+  vf:    {read:"",cause:"",ddx:"",urgency:""},
+  ivr:   {read:"",cause:"",ddx:"",urgency:""},
+  avb1:  {read:"",cause:"",ddx:"",urgency:""},
+  avb2:  {read:"",cause:"",ddx:"",urgency:""},
+  avb2b: {read:"",cause:"",ddx:"",urgency:""},
+  avb3:  {read:"",cause:"",ddx:"",urgency:""},
+  rbbb:  {read:"",cause:"",ddx:"",urgency:""},
+  lbbb:  {read:"",cause:"",ddx:"",urgency:""},
+  hyperk:{read:"",cause:"",ddx:"",urgency:""},
+  hypok: {read:"",cause:"",ddx:"",urgency:""},
+  hac:   {read:"",cause:"",ddx:"",urgency:""},
+  stemi: {read:"",cause:"",ddx:"",urgency:""},
+  pace:  {read:"",cause:"",ddx:"",urgency:""},
+  pea:   {read:"",cause:"",ddx:"",urgency:""},
+  asys:  {read:"",cause:"",ddx:"",urgency:""},
+};
+
+// ============================================================================
+//  LEARN MODE — separate state, reuses beatWave/gauss/CATS from monitor mode
+// ============================================================================
+const Sl={hr:72,pAmp:1,pr:160,qrs:90,rAmp:1,st:0,tAmp:1,noise:.04,wander:0,special:null,delta:0};
+let lBuf=null, lWIdx=0, lW=0, lH=0;
+let lBeatClock=0, lRrCurrent=60/72, lLastTs=0;
+let lWenckN=0, lPvcCtr=2, lPacCtr=3, lMob2Ctr=0, lCavbP=0, lVfSeed=Math.random()*1e3;
+let lCurType='normal', lBeatParams={};
+let cvFlow=null, ctxFlow=null, cvBeat=null, ctxBeat=null, beatW=0, beatH=0;
+let learnAnimating=false, learnLooping=false, learnInited=false;
+let learnSelectedItem=null;
+
+function lCurrentRR(){return Sl.hr<=0?999:60/Sl.hr;}
+
+function lStartBeat(){
+  lCurType='normal';
+  if(Sl.special==='pvc'||Sl.special==='mpvc'){if(--lPvcCtr<=0){lCurType='pvc';lPvcCtr=2+(Math.random()*3|0);}}
+  else if(Sl.special==='pac'){if(--lPacCtr<=0){lCurType='pac';lPacCtr=3+(Math.random()*3|0);}}
+  else if(Sl.special==='wenck'){if(++lWenckN>=4){lCurType='dropped';lWenckN=0;}}
+  else if(Sl.special==='mob2'){if(++lMob2Ctr>=3){lCurType='dropped';lMob2Ctr=0;}}
+  else if(Sl.special==='vt'||Sl.special==='tdp'){lCurType='vt';}
+  else if(Sl.special==='rbbb'){lCurType='rbbb';}
+  else if(Sl.special==='paced'){lCurType='paced';}
+  else if(Sl.special==='junc'){lCurType='junc';}
+}
+
+function lParamsForBeat(){
+  const p={pAmp:Sl.pAmp,pr:Sl.pr,qrs:Sl.qrs,rAmp:Sl.rAmp,st:Sl.st/100,tAmp:Sl.tAmp,delta:Sl.delta,
+    rsr:0,uwave:(Sl.special==='uwave'),spike:0,noS:(Sl.special==='stemi')};
+  if(lCurType==='pvc'){
+    p.pAmp=0;p.st=0;p.delta=0;p.vt=1;
+    if(Sl.special==='mpvc'){
+      const r=Math.floor(Math.random()*3);
+      if(r===0){p.qrs=180;p.rAmp=1.5;p.tAmp=-0.8;}
+      else if(r===1){p.qrs=200;p.rAmp=-1.3;p.tAmp=0.7;}
+      else{p.qrs=160;p.rAmp=1.1;p.tAmp=-1.1;}
+    }else{p.qrs=185;p.rAmp=1.6;p.tAmp=-0.8;}
+  }
+  else if(lCurType==='pac'){p.pAmp=1.4;p.pr=110;}
+  else if(lCurType==='vt'){p.pAmp=0;p.qrs=Sl.qrs;p.rAmp=Sl.rAmp;p.vt=1;}
+  else if(lCurType==='dropped'){p.rAmp=0;p.tAmp=0;p.st=0;p.delta=0;if(Sl.special==='wenck')p.pr=160+lWenckN*45;}
+  else if(lCurType==='rbbb'){p.rsr=1;p.qrs=140;}
+  else if(lCurType==='paced'){p.pAmp=0;p.spike=1;p.qrs=175;p.rAmp=1.3;p.tAmp=-.6;}
+  else if(lCurType==='junc'){p.pAmp=-0.6;p.pr=90;}
+  return p;
+}
+
+function lSampleValue(dt){
+  if(Sl.special==='vf'){
+    lVfSeed+=dt*6;let s=0;
+    s+=0.45*Math.sin(lVfSeed*2*Math.PI*1.0);
+    s+=0.30*Math.sin(lVfSeed*2*Math.PI*2.3+1.1);
+    s+=0.22*Math.sin(lVfSeed*2*Math.PI*3.7+2.0);
+    return s*(0.8+0.4*Math.sin(lVfSeed*0.7));
+  }
+  if(Sl.special==='asys')return 0;
+  let base=0;
+  if(Sl.special==='afib')base+=0.05*(Math.sin(lBeatClock*2*Math.PI*7.3)+0.6*Math.sin(lBeatClock*2*Math.PI*11.1+1));
+  if(Sl.special==='aflut'){const f=(lBeatClock*5)%1;base+=0.12*(f<0.7?f/0.7:(1-(f-0.7)/0.3))-0.06;}
+  if(Sl.special==='cavb'){lCavbP+=dt/0.75;const pp=lCavbP%1;base+=gauss(pp,0.5,0.04,0.13*Sl.pAmp);}
+  const rr=lCurrentRR();
+  lBeatClock+=dt;
+  if(lBeatClock>=lRrCurrent){
+    lBeatClock-=lRrCurrent;
+    lRrCurrent=(Sl.special==='afib')?rr*(0.5+Math.random()):rr;
+    lStartBeat();
+    if(lCurType==='pac'||lCurType==='pvc')lRrCurrent=rr*0.6;
+    lBeatParams=lParamsForBeat();
+  }
+  const t=lBeatClock/lRrCurrent;
+  if(lBeatParams.spike && t>0.44 && t<0.455)base+=1.4;
+  let amp=1;
+  if(Sl.special==='tdp')amp=1.05*Math.sin(performance.now()*0.0028);
+  base+=beatWave(t,lBeatParams)*(Sl.special==='tdp'?amp:1);
+  return base;
+}
+
+function drawGridOn(c,w,h){
+  const sm=Math.max(6,h/10);
+  c.lineWidth=1;c.strokeStyle=css('--grid-fine');c.beginPath();
+  for(let x=0;x<w;x+=sm){c.moveTo(x+.5,0);c.lineTo(x+.5,h);}
+  for(let y=0;y<h;y+=sm){c.moveTo(0,y+.5);c.lineTo(w,y+.5);}
+  c.stroke();
+  c.strokeStyle=css('--grid-bold');c.beginPath();
+  for(let x=0;x<w;x+=sm*5){c.moveTo(x+.5,0);c.lineTo(x+.5,h);}
+  for(let y=0;y<h;y+=sm*5){c.moveTo(0,y+.5);c.lineTo(w,y+.5);}
+  c.stroke();
+}
+
+function drawBeatCanvas(){
+  if(!ctxBeat||!learnSelectedItem)return;
+  ctxBeat.fillStyle=css('--bg');ctxBeat.fillRect(0,0,beatW,beatH);
+  drawGridOn(ctxBeat,beatW,beatH);
+  // Choose representative beat type for static snapshot
+  const k=learnSelectedItem.k;
+  let snapType='normal';
+  if(k==='pvc'||k==='mpvc')snapType='pvc';
+  else if(Sl.special==='vt'||Sl.special==='tdp')snapType='vt';
+  else if(Sl.special==='rbbb')snapType='rbbb';
+  else if(Sl.special==='paced')snapType='paced';
+  else if(Sl.special==='junc')snapType='junc';
+  const savCT=lCurType, savWn=lWenckN;
+  lCurType=snapType; lWenckN=0;
+  const p=lParamsForBeat();
+  lCurType=savCT; lWenckN=savWn;
+  ctxBeat.lineWidth=2.6;ctxBeat.strokeStyle=css('--trace');
+  ctxBeat.shadowColor=css('--trace-glow');ctxBeat.shadowBlur=8;ctxBeat.lineJoin='round';
+  ctxBeat.beginPath();
+  const mid=beatH*0.55, gain=beatH*0.20;
+  const N=600;
+  for(let i=0;i<N;i++){
+    const t=i/(N-1);
+    let v;
+    if(Sl.special==='vf'){
+      v=0.6*Math.sin(t*2*Math.PI*7.5+1.2)*(0.7+0.3*Math.sin(t*2*Math.PI*23));
+    }else if(Sl.special==='asys'){
+      v=0;
+    }else{
+      v=beatWave(t,p);
+      if(Sl.special==='afib')v+=0.04*Math.sin(t*2*Math.PI*7.3);
+      if(Sl.special==='aflut'){const f=(t*5)%1;v+=0.12*(f<0.7?f/0.7:(1-(f-0.7)/0.3))-0.06;}
+      if(Sl.special==='cavb')v+=gauss(t,0.5,0.04,0.13*Sl.pAmp);
+    }
+    const x=(i/(N-1))*beatW;
+    const y=mid-v*gain;
+    i?ctxBeat.lineTo(x,y):ctxBeat.moveTo(x,y);
+  }
+  ctxBeat.stroke();
+  ctxBeat.shadowBlur=0;
+  // Label
+  ctxBeat.fillStyle=css('--amber');
+  ctxBeat.font="11px ui-monospace,Menlo,monospace";
+  ctxBeat.fillText(learnSelectedItem.n+' ('+learnSelectedItem.en+')',10,16);
+}
+
+function renderLearn(ts){
+  if(!learnAnimating){learnLooping=false;return;}
+  if(!lLastTs)lLastTs=ts;
+  let dt=(ts-lLastTs)/1000;lLastTs=ts;if(dt>0.1)dt=0.1;
+  const steps=Math.max(1,Math.round(dt*FS)),sub=dt/steps;
+  for(let i=0;i<steps;i++){
+    let v=lSampleValue(sub);
+    v+=(Math.random()-0.5)*Sl.noise;
+    lBuf[lWIdx]=v;lWIdx=(lWIdx+1)%lBuf.length;
+  }
+  ctxFlow.fillStyle=css('--bg');ctxFlow.fillRect(0,0,lW,lH);
+  drawGridOn(ctxFlow,lW,lH);
+  const mid=lH*0.5,gain=lH*0.22;
+  ctxFlow.lineWidth=2;ctxFlow.strokeStyle=css('--trace');
+  ctxFlow.shadowColor=css('--trace-glow');ctxFlow.shadowBlur=6;ctxFlow.lineJoin='round';
+  ctxFlow.beginPath();
+  const n=lBuf.length;
+  for(let i=0;i<n;i++){
+    const idx=(lWIdx+i)%n,x=(i/(n-1))*lW,y=mid-lBuf[idx]*gain;
+    i?ctxFlow.lineTo(x,y):ctxFlow.moveTo(x,y);
+  }
+  ctxFlow.stroke();ctxFlow.shadowBlur=0;
+  requestAnimationFrame(renderLearn);
+}
+
+function setupLearnCanvases(){
+  if(!cvFlow){
+    cvFlow=document.getElementById('cv-flow');
+    cvBeat=document.getElementById('cv-beat');
+    ctxFlow=cvFlow.getContext('2d');
+    ctxBeat=cvBeat.getContext('2d');
+  }
+  const ratio=Math.min(window.devicePixelRatio||1,2);
+  lW=Math.max(200,window.innerWidth-28); lH=120;
+  cvFlow.style.width=lW+'px';cvFlow.style.height=lH+'px';
+  cvFlow.width=lW*ratio;cvFlow.height=lH*ratio;
+  ctxFlow.setTransform(ratio,0,0,ratio,0,0);
+  beatW=Math.max(200,window.innerWidth-28); beatH=210;
+  cvBeat.style.width=beatW+'px';cvBeat.style.height=beatH+'px';
+  cvBeat.width=beatW*ratio;cvBeat.height=beatH*ratio;
+  ctxBeat.setTransform(ratio,0,0,ratio,0,0);
+  if(!lBuf)lBuf=new Float32Array(FS*5);
+}
+
+function buildLearnRhythms(){
+  const wrap=document.getElementById('learn-rhythms');
+  CATS.forEach(cat=>{
+    const t=document.createElement('div');t.className='cat-title';t.textContent=cat.g;wrap.appendChild(t);
+    const g=document.createElement('div');g.className='grid';
+    cat.items.forEach(it=>{
+      const b=document.createElement('button');
+      b.className='chip';b.dataset.k=it.k;
+      b.innerHTML=it.n+'<span>'+it.en+'</span>';
+      b.addEventListener('click',()=>lApplyRhythm(it));
+      g.appendChild(b);
+    });
+    wrap.appendChild(g);
+  });
+}
+
+function updateLessonUI(k){
+  const L=LESSON[k]||{};
+  const setText=(id,txt)=>{
+    const el=document.getElementById(id);
+    if(txt&&txt.trim()){el.textContent=txt;el.classList.remove('placeholder');}
+    else{el.textContent='（ここに記入）';el.classList.add('placeholder');}
+  };
+  setText('lesson-read',L.read);
+  setText('lesson-cause',L.cause);
+  setText('lesson-ddx',L.ddx);
+  setText('lesson-urgency',L.urgency);
+}
+
+function lApplyRhythm(item){
+  learnSelectedItem=item;
+  Object.assign(Sl,item.s);
+  lWenckN=0;lPvcCtr=2;lPacCtr=3;lMob2Ctr=0;lCavbP=0;lBeatClock=0;lRrCurrent=lCurrentRR();
+  lBeatParams=lParamsForBeat();
+  if(lBuf)lBuf.fill(0);lWIdx=0;
+  drawBeatCanvas();
+  updateLessonUI(item.k);
+  document.querySelectorAll('#learn-rhythms .chip').forEach(c=>c.classList.toggle('on',c.dataset.k===item.k));
+}
+
+function initLearn(){
+  if(learnInited)return;
+  learnInited=true;
+  buildLearnRhythms();
+  setupLearnCanvases();
+  lApplyRhythm(CATS[0].items[0]);
+}
+
+window.addEventListener('resize',()=>{if(learnInited){setupLearnCanvases();drawBeatCanvas();}});
+
+// ============================================================================
+//  MODE SWITCHING
+// ============================================================================
+function setMode(mode){
+  document.body.classList.remove('mode-select','mode-monitor','mode-learn');
+  document.body.classList.add('mode-'+mode);
+  if(mode==='learn'){
+    initLearn();
+    learnAnimating=true;lLastTs=0;
+    if(!learnLooping){learnLooping=true;requestAnimationFrame(renderLearn);}
+  }else{
+    learnAnimating=false;
+  }
+}
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+document.querySelectorAll('[data-back]').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.back)));
+setMode('select');
+
 })();
 </script>
 </body>
