@@ -337,14 +337,14 @@ function beatWave(t,p){
   }else{
     v+=gauss(t,0.46,0.010*qrsF,-0.10*p.rAmp);
     v+=gauss(t,0.50,0.012*qrsF,1.0*p.rAmp);
-    v+=gauss(t,0.555,0.013*qrsF,-0.30*p.rAmp);
+    v+=gauss(t,0.555,0.013*qrsF,-0.25*p.rAmp);
     // RBBB second R' bump
     if(p.rsr){v+=gauss(t,0.575,0.016,0.55*p.rAmp);}
     // ST segment: sharp J-point onset, flat horizontal plateau (textbook style)
     if(p.st>0){
-      if(t>0.575&&t<0.86){
-        const u=(t-0.575)/0.285;
-        const onset=u<0.06?(0.5-0.5*Math.cos(Math.PI*u/0.06)):
+      if(t>0.565&&t<0.86){
+        const u=(t-0.565)/0.295;
+        const onset=u<0.04?(0.5-0.5*Math.cos(Math.PI*u/0.04)):
                     u>0.92?(0.5+0.5*Math.cos(Math.PI*(u-0.92)/0.08)):1;
         v+=p.st*onset;
       }
