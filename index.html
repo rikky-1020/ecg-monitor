@@ -444,8 +444,10 @@ function gauss(x,mu,s,a){const d=(x-mu)/s;return a*Math.exp(-0.5*d*d);}
 function beatWave(t,p){
   const prF=p.pr/160, qrsF=Math.max(.4,p.qrs/90);
   let v=0;
-  const pPos=0.30-0.10*prF;
-  v+=gauss(t,Math.max(.05,pPos),0.022,0.15*p.pAmp);
+  // P wave: position derived so that P-R distance ≈ PR ms / 833ms (HR=72 baseline)
+  // pPos at prF=1 (PR=160ms) → 0.30, giving P-R ≈ 0.20 beat unit (~160ms at HR=72)
+  const pPos=0.50-0.20*prF;
+  v+=gauss(t,Math.max(.05,pPos),0.025,0.15*p.pAmp);
   // delta wave (WPW): slurred upstroke before R
   if(p.delta){v+=gauss(t,0.475,0.020,0.18*p.rAmp);}
   if(p.vt){
@@ -474,10 +476,11 @@ function beatWave(t,p){
         v+=p.st*env;
       }
     }
-    v+=gauss(t,0.79,0.035,0.30*p.tAmp);
+    // T wave: peak at t=0.82 → QT ≈ 0.40 beat units (~330ms at HR=72, QTc≈360ms)
+    v+=gauss(t,0.82,0.035,0.30*p.tAmp);
   }
   // U wave (hypokalemia)
-  if(p.uwave)v+=gauss(t,0.88,0.03,0.08);
+  if(p.uwave)v+=gauss(t,0.90,0.03,0.08);
   return v;
 }
 
