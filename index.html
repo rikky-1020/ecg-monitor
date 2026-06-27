@@ -310,8 +310,8 @@ const CATS=[
      note:'<b>低K血症</b>：T平低・ST低下・U波出現。'},
    {k:'hac',n:'発症直後MI',en:'Hyperacute T',s:{hr:80,pAmp:1,pr:160,qrs:95,rAmp:1.1,st:8,tAmp:2.6,noise:.05,special:null,delta:0},
      note:'<b>発症直後MI</b>：T波増高（hyperacute T）。ST上昇は軽度〜未出現で超急性期。'},
-   {k:'stemi',n:'ST上昇(STEMI)',en:'ST Elevation',s:{hr:80,pAmp:1,pr:160,qrs:95,rAmp:1.1,st:45,tAmp:0.4,noise:.05,special:null,delta:0},
-     note:'<b>STEMI</b>：J点から段差で立ち上がる平坦な ST 台地。狭心症・心筋梗塞・心膜炎などで出現。'},
+   {k:'stemi',n:'ST上昇(STEMI)',en:'ST Elevation',s:{hr:80,pAmp:1,pr:160,qrs:95,rAmp:1.1,st:45,tAmp:0.4,noise:.05,special:'stemi',delta:0},
+     note:'<b>STEMI</b>：基線から浮いた水平のST台地、その先にT波。狭心症・心筋梗塞・心膜炎などで出現。'},
    {k:'pace',n:'ペースメーカー',en:'Paced (V)',s:{hr:70,pAmp:0,pr:160,qrs:170,rAmp:1.3,st:0,tAmp:-.6,noise:.04,special:'paced',delta:0},
      note:'<b>心室ペーシング</b>：スパイク直後に幅広QRS。'},
    {k:'pea',n:'PEA',en:'Pulseless Elec.',d:1,s:{hr:40,pAmp:1,pr:160,qrs:110,rAmp:.7,st:0,tAmp:.6,noise:.05,special:null,delta:0},
@@ -337,16 +337,16 @@ function beatWave(t,p){
   }else{
     v+=gauss(t,0.46,0.010*qrsF,-0.10*p.rAmp);
     v+=gauss(t,0.50,0.012*qrsF,1.0*p.rAmp);
-    v+=gauss(t,0.555,0.013*qrsF,-0.25*p.rAmp);
+    if(!p.noS) v+=gauss(t,0.555,0.013*qrsF,-0.25*p.rAmp);
     // RBBB second R' bump
     if(p.rsr){v+=gauss(t,0.575,0.016,0.55*p.rAmp);}
-    // ST segment: sharp J-point onset, flat horizontal plateau (textbook style)
+    // ST segment: flat horizontal plateau with Gaussian-tail ease-in/out at J-point and end
     if(p.st>0){
-      if(t>0.565&&t<0.86){
-        const u=(t-0.565)/0.295;
-        const onset=u<0.02?(0.5-0.5*Math.cos(Math.PI*u/0.02)):
-                    u>0.92?(0.5+0.5*Math.cos(Math.PI*(u-0.92)/0.08)):1;
-        v+=p.st*onset;
+      if(t>0.50&&t<0.90){
+        let env=1;
+        if(t<0.575)      env=Math.exp(-0.5*Math.pow((t-0.575)/0.025,2));
+        else if(t>0.83)  env=Math.exp(-0.5*Math.pow((t-0.83)/0.025,2));
+        v+=p.st*env;
       }
     }else if(p.st<0){
       if(t>0.56&&t<0.72){
@@ -384,7 +384,7 @@ function startBeat(){
 }
 function paramsForBeat(){
   const p={pAmp:S.pAmp,pr:S.pr,qrs:S.qrs,rAmp:S.rAmp,st:S.st/100,tAmp:S.tAmp,delta:S.delta,
-           rsr:0,uwave:(S.special==='uwave'),spike:0};
+           rsr:0,uwave:(S.special==='uwave'),spike:0,noS:(S.special==='stemi')};
   if(curType==='pvc'){
     p.pAmp=0;p.st=0;p.delta=0;p.vt=1;
     if(S.special==='mpvc'){
