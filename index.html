@@ -331,9 +331,9 @@ function beatWave(t,p){
   // delta wave (WPW): slurred upstroke before R
   if(p.delta){v+=gauss(t,0.475,0.020,0.18*p.rAmp);}
   if(p.vt){
-    // VT/IVR/Torsades/PVC: wide bizarre monomorphic complex with discordant terminal portion
-    v+=gauss(t,0.485,0.055,1.15*p.rAmp);
-    v+=gauss(t,0.630,0.070,1.25*p.tAmp);
+    // VT/IVR/Torsades/PVC: extremely rounded sine-like biphasic complex
+    v+=gauss(t,0.460,0.090,1.15*p.rAmp);
+    v+=gauss(t,0.700,0.110,1.25*p.tAmp);
   }else{
     v+=gauss(t,0.46,0.010*qrsF,-0.10*p.rAmp);
     v+=gauss(t,0.50,0.012*qrsF,1.0*p.rAmp);
